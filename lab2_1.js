@@ -28,22 +28,21 @@ class Hopfield {
             const old_w = this.w.map(row => [...row]);
 
             for(let image of this.images) {
-                console.log(image, "IMAGES")
                 const x_t = transposeMattrix([image])
-                console.log(x_t)
-                const activation = multiplyMatrices(this.w, x_t).map(value => Math.tanh(value))
-                
-                this.w += addMatrices(
+                // console.log(x_t, "XT")
+                // console.log(this.w, "this.w, x_t")
+                const activation = multiplyMatrices(this.w, x_t).map(arr => arr.map(value => Math.tanh(value)))
+                // console.log(this.w, "x_t, activation")
+                this.w = addMatrices(
                     this.w,
                     multiplyByNumber(
-                        this.nu / this.size,
                         multiplyMatrices(
                             subtractMatrices(x_t, activation),
                             transposeMattrix(x_t)
-                        )
+                        ),
+                        this.nu / this.size,
                     ) 
                 )
-                console.log(this.w)
             }
         }
     }
@@ -99,13 +98,11 @@ function transposeMattrix(matrix) {
 }
 
 function multiplyMatrices(matrixA, matrixB) {
-    console.log(matrixA, matrixB)
     const rowsA = matrixA.length;
     const colsA = matrixA[0].length;
     const rowsB = matrixB.length;
     const colsB = matrixB[0].length;
   
-
     if (colsA !== rowsB) {
       throw new Error("Количество столбцов первой матрицы должно быть равно количеству строк второй матрицы.");
     }

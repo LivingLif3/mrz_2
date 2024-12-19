@@ -33,9 +33,9 @@ class Hopfield:
 
             for image in self.images:
                 x_t = np.matrix(image.copy()).T
-                print(x_t)
                 activation = np.tanh(self.w @ x_t)
-                
+
+
                 self.w += (self.nu / self.size) * (x_t - activation) @ x_t.T
                 np.fill_diagonal(self.w, 0)  # Диагональные элементы равны нулю
 
