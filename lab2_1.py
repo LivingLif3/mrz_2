@@ -41,6 +41,7 @@ class Hopfield:
 
             # Условие сходимости
             if np.abs(old_w - self.w).sum() < e:
+                print(np.abs(old_w - self.w).sum(), "HEEERE")
                 break
 
         np.fill_diagonal(self.w, 0)
@@ -67,6 +68,7 @@ class Hopfield:
 
             # Рассчёт нового состояния
             new_state = np.tanh(self.w @ states[-1].T).T
+            
             states.append(new_state)
             states.pop(0)
 
@@ -143,6 +145,7 @@ print(f'Is this image a negative? - {is_negative}')
 print('ORIGINAL IMAGE')
 image_beautiful_print(test_image, 4, 4)
 print('PREDICTED IMAGE')
+print(predicted_img, "AAAAAAHFIAFIQHIFQHIFHQIFHQIFHQIFHIQWHFIQHWFIWHFQIFHQIFHQIH")
 image_beautiful_print(predicted_img, 4, 4)
 print('NEGATIVE OF PREDICTED IMAGE')
 image_beautiful_print(predicted_img * (-1), 4, 4)

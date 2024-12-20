@@ -43,8 +43,86 @@ class Hopfield {
                         this.nu / this.size,
                     ) 
                 )
+
+                for (let i = 0; i < this.w.length; i++) {
+                    this.w[i][i] = 0;
+                }
+            }
+
+            let diffSum = 0;
+
+            for (let i = 0; i < old_w.length; i++) {
+                for (let j = 0; j < old_w[i].length; j++) {
+                    diffSum += Math.abs(old_w[i][j] - this.w[i][j]);
+                }
+            }
+
+            // Проверка условия
+            if (diffSum < e) {
+                // console.log('Weights have converged');
+                break;
             }
         }
+
+        for (let i = 0; i < this.w.length; i++) {
+            this.w[i][i] = 0;
+        }
+    }
+
+    findImageNum(x, images) {
+        for (let idx = 0; idx < images.length; idx++) {
+            const image = images[idx];
+            const maxDiff = Math.max(...image.map((val, i) => Math.abs(val - x[i])));
+    
+            if (maxDiff < 1e-2) {
+                return idx; // Возвращает индекс изображения, если найдено совпадение
+            }
+        }
+        return null; // Если не найдено совпадение
+    }
+
+    predict(x, max_iters = 1000) {
+        let states = Array(4).fill(x.slice());
+        let relaxation_iters = 0
+
+        for(let i = 0; i < max_iters; i++) {
+            relaxation_iters += 1
+            // console.log(states[states.length - 1], transposeMattrix([states[states.length - 1]]), "transposeMattrix(states[states.length - 1])")
+            // console.log(multiplyMatrices(this.w, transposeMattrix(states[states.length - 1]), true), "KSFHAKJFSAKFH")
+            console.log(states, "STATES")
+            let new_state = transposeMattrix(multiplyMatrices(this.w, transposeMattrix([states[states.length - 1]]), true)).map(arr => arr.map(value => Math.tanh(value)))
+            // console.log(new_state, "NEW_STATE")
+            states.push(...new_state); // Добавляем новый элемент в конец массива
+            states.shift();
+
+            if(i >= 3 && this.findAbsMax(0, 2, states) < 1e-8 && this.findAbsMax(1, 3, states) < 1e-8) {
+                let image_num = this.findImageNum(new_state, this.images)
+                let neg_image_num = this.findImageNum(new_state, this.neg_images)
+
+                let isNegative = neg_image_num !== null;
+
+                return {
+                    relaxation_iters,
+                    new_state,
+                    image_num: image_num !== null ? image_num : neg_image_num,
+                    is_negative: isNegative
+                };
+            }
+        }
+        
+        return {
+            relaxation_iters: max_iters,
+            new_state,
+            image_num: null,
+            is_negative: null
+        };
+    }
+
+    findAbsMax(first, second, states) {
+        let difference = states[first].map((val, index) => Math.abs(val - states[second][index]));
+
+        // Нахождение максимального значения
+        return Math.max(...difference);
     }
 }
 
@@ -80,6 +158,42 @@ alphabet = preprocess_alphabet(alphabet)
 network = new Hopfield(alphabet, 0.7)
 network.train()
 
+function imageBeautifulPrint(image, rows, cols) {
+    // Преобразуем в -1 и 1 (по аналогии с np.sign)
+    image = image.map(value => Math.sign(value));
+
+    // Заменяем значения 1 и -1 на символы
+    image = image.map(value => value === 1 ? '⬜' : '⬛');
+
+    // Преобразуем одномерный массив в двумерный
+    const image2D = [];
+    for (let i = 0; i < rows; i++) {
+        image2D.push(image.slice(i * cols, (i + 1) * cols));
+    }
+
+    // Выводим изображение
+    image2D.forEach(row => {
+        console.log(row.join(''));
+    });
+}
+
+test_image = [-1, -1, 1, 1, -1, -1, -1, 1, 1, 1, 1, 1, 1, -1, -1, 1]
+
+const {relaxation_iters: r_iters, new_state: state, image_num: image_idx, is_negative} = network.predict(test_image, 10000)
+
+let predicted_image = null
+
+if(image_idx) {
+    predicted_image = is_negative ? network.neg_images[image_idx] : network.images[image_idx]
+} else {
+    predicted_image = state
+}
+
+
+imageBeautifulPrint(test_image, 4, 4)
+console.log('PREDICTED IMAGE')
+imageBeautifulPrint(...predicted_image, 4, 4)
+
 // console.log(preprocess_alphabet([[[1, 2, 3], [4, 5, 6]], [[7, 8, 9], [10, 11, 12]]]))
 
 function transposeMattrix(matrix) {
@@ -97,12 +211,13 @@ function transposeMattrix(matrix) {
     return transposed;
 }
 
-function multiplyMatrices(matrixA, matrixB) {
+function multiplyMatrices(matrixA, matrixB, show=false) {
+    // if(show) console.log(matrixB, "MATRIX B")
     const rowsA = matrixA.length;
     const colsA = matrixA[0].length;
     const rowsB = matrixB.length;
     const colsB = matrixB[0].length;
-  
+
     if (colsA !== rowsB) {
       throw new Error("Количество столбцов первой матрицы должно быть равно количеству строк второй матрицы.");
     }
