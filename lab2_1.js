@@ -1,7 +1,11 @@
+// Лабораторная работа выполнена студентом 121702 группы Летко А.Ю
+// Вариант 3 (Реализовать сеть Хопфилда работающую в асинхронном режиме и с непрерывным состоянием)
+// Источник https://habr.com/ru/articles/561198/
+// https://github.com/z0rats/js-neural-networks/tree/master/hopfield_network
+
 function preprocess_alphabet(alphabet) {
     const processedAlphabet = alphabet.map(item => {
         if (Array.isArray(item) && Array.isArray(item[0])) {
-            // Преобразуем двумерный массив в одномерный
             return item.flat();
         } else {
             return item;
@@ -17,6 +21,7 @@ class Hopfield {
         this.images = images
         this.neg_images = this._get_neg_images(this.images)
         this.nu = nu
+        this.iters = 0
     }
 
     _get_neg_images(images) {
@@ -25,14 +30,12 @@ class Hopfield {
     
     train(e = 1e-6, max_iters = 10000) {
         for(let i = 0; i < max_iters; i++) {
+            this.iters = i
             const old_w = this.w.map(row => [...row]);
 
             for(let image of this.images) {
                 const x_t = transposeMattrix([image])
-                // console.log(x_t, "XT")
-                // console.log(this.w, "this.w, x_t")
                 const activation = multiplyMatrices(this.w, x_t).map(arr => arr.map(value => Math.tanh(value)))
-                // console.log(this.w, "x_t, activation")
                 this.w = addMatrices(
                     this.w,
                     multiplyByNumber(
@@ -150,7 +153,7 @@ let alphabet = [
         [1, -1, -1, -1],
         [1, -1, -1, -1],
         [-1, 1, 1, 1]
-    ]
+    ],
 ]
 
 alphabet = preprocess_alphabet(alphabet)
@@ -159,25 +162,21 @@ network = new Hopfield(alphabet, 0.7)
 network.train()
 
 function imageBeautifulPrint(image, rows, cols) {
-    // Преобразуем в -1 и 1 (по аналогии с np.sign)
     image = image.map(value => Math.sign(value));
 
-    // Заменяем значения 1 и -1 на символы
-    image = image.map(value => value === 1 ? '⬜' : '⬛');
+    image = image.map(value => value === 1 ? ' # ' : ' O ');
 
-    // Преобразуем одномерный массив в двумерный
     const image2D = [];
     for (let i = 0; i < rows; i++) {
         image2D.push(image.slice(i * cols, (i + 1) * cols));
     }
 
-    // Выводим изображение
     image2D.forEach(row => {
         console.log(row.join(''));
     });
 }
 
-test_image = [-1, -1, 1, 1, -1, -1, -1, 1, 1, 1, 1, 1, 1, -1, -1, 1]
+test_image = [-1, 1, 1, -1, 1, -1, -1, 1, 1, 1, 1, 1, 1, -1, -1, 1]
 
 const {relaxation_iters: r_iters, new_state: state, image_num: image_idx, is_negative} = network.predict(test_image, 10000)
 
@@ -189,7 +188,12 @@ if(image_idx) {
     predicted_image = state
 }
 
-
+console.log("All images")
+for(let img of alphabet) {
+    imageBeautifulPrint(img.flat(), 4, 4)
+    console.log()
+}3
+console.log("INPUT IMAGE")
 imageBeautifulPrint(test_image, 4, 4)
 console.log('PREDICTED IMAGE')
 imageBeautifulPrint(...predicted_image, 4, 4)
